@@ -95,11 +95,14 @@ if __name__ == "__main__":
     # for link in other_links:
     #     print(link)
 
-    # bad_dates = validate_dates(df)
 
-    # if bad_dates:
-    #     print("Found invalid dates:")
-    #     for idx, val, reason, link in bad_dates:
-    #         print(f"Row {idx}: {val} -> {reason} | Link: {link}")
-    # else:
-    #     print("✅ All dates look valid!")
+    bad_dates = validate_dates(df)
+
+    if bad_dates:
+        print("Found invalid dates:")
+        for idx, val, reason, link in bad_dates:
+            print(f"Row {idx}: {val} -> {reason} | Link: {link}")
+    else:
+        print("✅ All dates look valid!")
+
+
