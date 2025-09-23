@@ -35,8 +35,8 @@ Row 17717: 24-26-2023 -> Invalid month: 26 | Link: https://i.postimg.cc/PJLqFSGF
 # losses_with_dates.loc[rows_to_fix, "date"] = ["24-06-2023", "24-06-2023", "24-06-2023", "24-06-2023"]
 # losses_with_dates.loc[rows_to_fix, "manually_changed"] = True
 
-losses_with_dates.at[12094, "date"] = "04-10-2022"
-losses_with_dates.at[12094, "manually_changed"] = True
+# losses_with_dates.at[12094, "date"] = "04-10-2022"
+# losses_with_dates.at[12094, "manually_changed"] = True
 
 #save the updated file
 losses_with_dates.to_csv("losses_with_dates.csv", index=False)
