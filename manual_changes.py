@@ -2,15 +2,15 @@
 
 import pandas as pd
 
-# Load your existing file
+# Load your CSVlosses_with_dates = pd.read_csv("losses_with_dates.csv")
 losses_with_dates = pd.read_csv("losses_with_dates.csv")
 
-# Add manually_changed column
-#losses_with_dates["manually_changed"] = False
+# Ensure 'manually_changed' is boolean and NaNs are treated as False
+#losses_with_dates["manually_changed"] = losses_with_dates["manually_changed"].fillna(False).astype("boolean")
 
 # Example of manually fixing a row:
-# losses_with_dates.at[10, "date"] = "15-03-2023"
-# losses_with_dates.at[10, "manually_changed"] = True
+#losses_with_dates.at[10, "date"] = "15-03-2023"
+#losses_with_dates.at[10, "manually_changed"] = True
 
 # Manual changes:
 '''

@@ -5,6 +5,29 @@ import re
 #df = pd.read_csv("losses.csv")
 df = pd.read_csv("losses_with_dates.csv")
 
+def date_year_distribution():
+    """
+    Compute the percentage of rows for each year based on the 'date' column.
+    Assumes dates are in dd-mm-yyyy format.
+    """
+    # Drop rows without a date
+    df_with_date = df[df['date'].notna() & (df['date'].astype(str).str.strip() != "")]
+
+    # Extract year
+    years = df_with_date['date'].str[-4:].astype(int)
+
+    # Count occurrences per year
+    year_counts = years.value_counts().sort_index()
+
+    # Compute percentages
+    total = len(df_with_date)
+    year_percentages = (year_counts / total * 100).round(2)
+
+    print("Date distribution by year (percentage of total rows with date):")
+    for year, pct in year_percentages.items():
+        print(f"{year}: {pct}% ({year_counts[year]} rows)")
+
+
 def list_unique_loss_types():
     # Count number of rows per unique loss_type
     loss_type_counts = df['loss_type'].value_counts()
@@ -89,6 +112,8 @@ if __name__ == "__main__":
     #count_link_types()
 
     count_link_types_no_date()
+
+    # date_year_distribution()
     # other_links = df[df['link_type'] == 'other']['link'].tolist()
 
     # # Print all the links
