@@ -14,9 +14,17 @@ def snowflake_to_date(snowflake_id: str) -> str:
 def extract_dates_from_twitter(df: pd.DataFrame) -> pd.DataFrame:
     """
     Update 'date' column for rows with link_type 'twitter' using snowflake IDs.
-    Only updates rows where 'date' is missing or empty.
+    Only updates rows where 'date' is missing or empty and 'manually_changed' is not True.
     """
-    twitter_rows = (df['link_type'] == 'twitter') & (df['date'].isna() | (df['date'] == ""))
+    # Ensure column exists
+    if "manually_changed" not in df.columns:
+        df["manually_changed"] = False
+
+    twitter_rows = (
+        (df['link_type'] == 'twitter') &
+        (df['date'].isna() | (df['date'] == "")) &
+        (~df['manually_changed'])
+    )
     
     for idx, row in df[twitter_rows].iterrows():
         try:
