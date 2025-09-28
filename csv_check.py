@@ -5,6 +5,7 @@ import re
 #df = pd.read_csv("losses.csv")
 df = pd.read_csv("losses_with_dates.csv")
 
+
 def date_year_distribution():
     """
     Compute the percentage of rows for each year based on the 'date' column.
@@ -71,11 +72,15 @@ def count_dates():
 import pandas as pd
 import re
 
+import re
+import pandas as pd
+
 def validate_dates(df: pd.DataFrame):
     """
     Validate that all non-empty dates are in dd-mm-yyyy format,
     with 01 <= day <= 31, 01 <= month <= 12,
     and 2022 <= year <= 2025.
+    Ignores empty dates and 'NO_DATE_FOUND'.
     Returns a list of (row_index, date_str, reason, link).
     """
     results = []
@@ -83,7 +88,7 @@ def validate_dates(df: pd.DataFrame):
     for idx, date_str in df["date"].dropna().items():
         date_str = str(date_str).strip()
 
-        if not date_str:
+        if not date_str or date_str.upper() == "NO_DATE_FOUND":
             continue
 
         # Regex for dd-mm-yyyy
@@ -101,6 +106,7 @@ def validate_dates(df: pd.DataFrame):
             results.append((idx, date_str, f"Invalid year: {year}", df.loc[idx, "link"]))
 
     return results
+
 
 
 if __name__ == "__main__":

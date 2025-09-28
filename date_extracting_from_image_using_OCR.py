@@ -12,13 +12,46 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.data
 # Initialize EasyOCR once
 reader = easyocr.Reader(["en"], gpu=False)
 
+def try_fix_with_slash_heuristic(text: str) -> Optional[str]:
+    """
+    Fix common OCR error where a '1' is misread instead of a '/' before the year.
+    Example:
+        '11/0912022' -> '11/09/2022'
+        '19/0512022' -> '19/05/2022'
+    Only returns a date if it is valid (dd-mm-yyyy) and year >= 2022.
+    """
+    import re
+
+    # Keep only digits and slashes
+    cleaned = re.sub(r"[^0-9/]", "", text)
+
+    # Match pattern: dd/mm1yyyy (the extra 1 before the year)
+    m = re.match(r"^(\d{1,2})/(\d{2})1(20\d{2})$", cleaned)
+    if m:
+        day, month, year = map(int, m.groups())
+        return normalize_date(day, month, year)
+
+    # Match pure digits: ddmm1yyyy
+    m = re.match(r"^(\d{2})(\d{2})1(20\d{2})$", cleaned)
+    if m:
+        day, month, year = map(int, m.groups())
+        return normalize_date(day, month, year)
+
+    return None
+
+
+
 
 def normalize_date(day: int, month: int, year: int) -> Optional[str]:
-    """Validate date and return in dd-mm-yyyy format."""
+    """Validate date and return in dd-mm-yyyy format with 4-digit year."""
     try:
+        # If year is 2 digits and >= 22, prepend 20
+        if year < 100:
+            year += 2000
         return datetime(year, month, day).strftime("%d-%m-%Y")
     except ValueError:
         return None
+
 
 
 def extract_date_from_image(img: Image.Image) -> Optional[str]:
@@ -34,7 +67,7 @@ def extract_date_from_image(img: Image.Image) -> Optional[str]:
     img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     results = reader.readtext(img_cv, detail=0, paragraph=False)
 
-    print("DEBUG: OCR results:", results)  # Show what text was detected
+    #print("DEBUG: OCR results:", results)  # Show what text was detected
 
     # 1. Try normal regex first
     for text in results:
@@ -42,15 +75,15 @@ def extract_date_from_image(img: Image.Image) -> Optional[str]:
         if match:
             raw = match.group(0).replace("-", "/").replace(".", "/")
             parts = raw.split("/")
-            print(f"DEBUG: Regex match found: {raw} -> parts: {parts}")
+            #print(f"DEBUG: Regex match found: {raw} -> parts: {parts}")
             try:
                 if len(parts) == 3:
                     day, month, year = map(int, parts)
                     norm = normalize_date(day, month, year)
-                    print(f"DEBUG: Normalized date: {norm}")
+                    #print(f"DEBUG: Normalized date: {norm}")
                     return norm
             except ValueError:
-                print(f"DEBUG: ValueError for parts: {parts}")
+                #print(f"DEBUG: ValueError for parts: {parts}")
                 continue
 
     # 2. Fallback: detect year and reconstruct
@@ -72,20 +105,28 @@ def extract_date_from_image(img: Image.Image) -> Optional[str]:
             if len(sep_digits) >= 2:
                 candidates.append((sep_digits[-2], sep_digits[-1], year))
 
-            print(f"DEBUG: Year fallback - text: '{text}', year: {year}, prefix: '{prefix}', candidates: {candidates}")
+            #print(f"DEBUG: Year fallback - text: '{text}', year: {year}, prefix: '{prefix}', candidates: {candidates}")
 
             for cand in candidates:
                 try:
                     day, month, yr = map(int, cand)
                     norm = normalize_date(day, month, yr)
-                    print(f"DEBUG: Trying candidate: {cand} -> normalized: {norm}")
+                    #print(f"DEBUG: Trying candidate: {cand} -> normalized: {norm}")
                     if norm:
                         return norm
                 except Exception as e:
-                    print(f"DEBUG: Failed candidate {cand}: {e}")
+                    #print(f"DEBUG: Failed candidate {cand}: {e}")
                     continue
 
-    print("DEBUG: No date found in this image")
+    # 3. Final heuristic: check if misread '1's could be slashes
+    for text in results:
+        fixed = try_fix_with_slash_heuristic(text)
+        if fixed:
+            #print(f"DEBUG: Heuristic fixed date from '{text}' -> {fixed}")
+            return fixed
+
+
+    #print("DEBUG: No date found in this image")
     return None
 
 
@@ -100,4 +141,3 @@ if __name__ == "__main__":
             img = Image.open(path)
             date = extract_date_from_image(img)
             print(f"{filename} -> {date}")
-

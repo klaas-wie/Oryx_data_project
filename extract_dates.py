@@ -6,9 +6,10 @@ def load_losses_csv(csv_path="losses_with_dates.csv") -> pd.DataFrame:
     """Load losses.csv into a pandas DataFrame."""
     return pd.read_csv(csv_path)
 
-if __name__ == "__main__":
+def extract_dates(csv_path):
+    """Extract dates from links and update the CSV."""
     # Load CSV
-    df = load_losses_csv()
+    df = load_losses_csv(csv_path)
 
     # Ensure 'manually_changed' exists
     if "manually_changed" not in df.columns:
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     df["date"] = df["date"].astype(object)
 
     # --- Postimg links ---
+    # Only process rows without date and not manually changed
     mask_postimg = (
         df["link"].str.contains("postimg|i.postimg|postlmg", regex=True, na=False)
         & df["date"].isna()
@@ -43,4 +45,8 @@ if __name__ == "__main__":
 
     # Save updated CSV
     df.to_csv("losses_with_dates.csv", index=False, encoding="utf-8")
-    print("Date extraction completed for postimg and Twitter/X links.")
+    print("Date extraction completed")
+
+if __name__ == "__main__":
+    extract_dates()
+    
