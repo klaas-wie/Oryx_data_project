@@ -1,51 +1,52 @@
 import pandas as pd
-import warnings
-import logging
 from extract_images_from_postimg import load_postimg_image
 from date_extracting_from_image_using_OCR import extract_date_from_image
+import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.data")
-
-# --- Logging setup ---
-logging.basicConfig(
-    filename="ocr_log.txt",
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logging.getLogger("").addHandler(console)
 
 
 def load_images_from_csv(df: pd.DataFrame):
     """
-    Generator yielding (index, url, image) for rows in the dataframe
-    where the link_type is i.postimg, postimg, or postlmg
-    and date is empty (NaN).
-    Skips rows already processed or flagged as NO_DATE_FOUND.
+    Generator yielding (index, url, image) for rows needing OCR.
     """
     rows_to_process = df[
         df["link_type"].isin(["i.postimg", "postimg", "postlmg"]) &
         df["date"].isna()
     ]
-
     for idx, row in rows_to_process.iterrows():
-        url = row["link"]
-        image = load_postimg_image(url)
-        yield idx, url, image
+        yield idx, row["link"], load_postimg_image(row["link"])
 
 
-if __name__ == "__main__":
-    input_csv = "losses_with_dates.csv"
-    df = pd.read_csv(input_csv)
+def process_single_row(idx_url_img):
+    """
+    Process a single image row: run OCR and return (index, date_str)
+    """
+    idx, url, img = idx_url_img
+    if not img:
+        return idx, "NO_DATE_FOUND"
+    date_str = extract_date_from_image(img)
+    return idx, date_str if date_str else "NO_DATE_FOUND"
 
-    total_to_process = df[
-        df["link_type"].isin(["i.postimg", "postimg", "postlmg"]) &
-        df["date"].isna()
-    ].shape[0]
-    logging.info(f"Total rows needing processing: {total_to_process}")
 
-    batch_size = 10  # Save CSV after every 10 rows
+def extract_dates_from_images(
+    df: pd.DataFrame,
+    csv_path: str,
+    batch_size: int = 10,
+    logger=None,
+):
+    """
+    Core OCR function with mandatory CSV saving and optional logging.
+
+    Args:
+        df: DataFrame to process.
+        csv_path: Path to save the CSV after each batch and at the end.
+        batch_size: Number of rows per save batch (default 10).
+        logger: Optional logger for progress messages (default None = no logging).
+
+    Returns:
+        Updated dataframe with extracted dates (also saved to CSV).
+    """
     processed_count = 0
 
     for idx, url, img in load_images_from_csv(df):
@@ -55,23 +56,66 @@ if __name__ == "__main__":
         ].shape[0] - 1
 
         if img:
-            logging.info(f"[{idx}] Loaded image from {url}: size={img.size}, format={img.format}")
+            if logger:
+                logger.info(f"[{idx}] Loaded image from {url}: size={img.size}, format={img.format}")
             date_str = extract_date_from_image(img)
             if date_str:
                 df.at[idx, "date"] = date_str
-                logging.info(f"[{idx}] Extracted date: {date_str} ({remaining} remaining)")
+                if logger:
+                    logger.info(f"[{idx}] Extracted date: {date_str} ({remaining} remaining)")
             else:
-                # Mark row as attempted but no date found
                 df.at[idx, "date"] = "NO_DATE_FOUND"
-                logging.info(f"[{idx}] No date found in image. ({remaining} remaining)")
+                if logger:
+                    logger.info(f"[{idx}] No date found in image. ({remaining} remaining)")
         else:
-            logging.info(f"[{idx}] Failed to load image from {url} ({remaining} remaining)")
+            df.at[idx, "date"] = "NO_DATE_FOUND"
+            if logger:
+                logger.info(f"[{idx}] Failed to load image from {url} ({remaining} remaining)")
 
         processed_count += 1
+        # Always save CSV after each batch
         if processed_count % batch_size == 0:
-            df.to_csv(input_csv, index=False)
-            logging.info(f"Saved progress after {processed_count} processed rows.")
+            df.to_csv(csv_path, index=False)
+            if logger:
+                logger.info(f"Saved progress after {processed_count} processed rows.")
 
-    # Final save
-    df.to_csv(input_csv, index=False)
-    logging.info("OCR processing completed for all rows.")
+    # Final save at the end
+    df.to_csv(csv_path, index=False)
+    if logger:
+        logger.info("Final CSV save completed.")
+
+    return df
+
+if __name__ == "__main__":
+    import logging
+    import pandas as pd
+
+    # Ask user for CSV
+    csv_path = input("Enter path to CSV to extract dates from images: ").strip()
+
+    # Load the CSV
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        print(f"File not found: {csv_path}")
+        exit(1)
+
+    # --- Logging setup ---
+    log_file = csv_path.replace(".csv", "_ocr.log")
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s"
+    )
+    console = logging.StreamHandler()    # Also log to console
+    console.setLevel(logging.INFO)
+    logging.getLogger("").addHandler(console)
+
+    logger = logging.getLogger()         # Get the root logger
+
+    # Run the OCR function with logging enabled
+    extract_dates_from_images(
+        df,
+        csv_path=csv_path,
+        logger=logger
+    )

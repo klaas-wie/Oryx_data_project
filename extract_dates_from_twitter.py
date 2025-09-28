@@ -40,13 +40,23 @@ def extract_dates_from_twitter(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 if __name__ == "__main__":
+    import pandas as pd
+
+    # Prompt user for CSV file
+    csv_path = input("Enter path to CSV to extract Twitter/X dates from: ").strip()
+
     # Load CSV
-    df = pd.read_csv("losses_with_dates.csv")
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        print(f"File not found: {csv_path}")
+        exit(1)
 
     # Only update missing dates
     df = extract_dates_from_twitter(df)
 
-    # Save back to same file
-    df.to_csv("losses_with_dates.csv", index=False)
+    # Save back to the same CSV
+    df.to_csv(csv_path, index=False)
 
-    print("Twitter/X date extraction completed.")
+    print(f"Twitter/X date extraction completed for '{csv_path}'")
+
