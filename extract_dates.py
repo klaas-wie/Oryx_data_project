@@ -11,10 +11,13 @@ def extract_dates(csv_path, logger=None):
         df["manually_changed"] = False
     df["date"] = df["date"].astype(object)
 
+    # Helper: missing date mask (NaN or empty string)
+    missing_date = df["date"].isna() | (df["date"].astype(str).str.strip() == "")
+
     # --- Postimg links (from link string)
     mask_postimg = (
         df["link"].str.contains("postimg|i.postimg|postlmg", regex=True, na=False)
-        & df["date"].isna()
+        & missing_date
         & ~df["manually_changed"]
     )
     df.loc[mask_postimg, "date"] = df.loc[mask_postimg, "link"].apply(
@@ -24,7 +27,7 @@ def extract_dates(csv_path, logger=None):
     # --- Twitter/X links ---
     mask_twitter = (
         df["link"].str.contains("twitter.com|x.com", regex=True, na=False)
-        & df["date"].isna()
+        & missing_date
         & ~df["manually_changed"]
     )
     if mask_twitter.any():
@@ -35,7 +38,7 @@ def extract_dates(csv_path, logger=None):
     # --- Postimg images ---
     mask_postimg_missing = (
         df["link"].str.contains("postimg|i.postimg|postlmg", regex=True, na=False)
-        & df["date"].isna()
+        & missing_date
         & ~df["manually_changed"]
     )
     if mask_postimg_missing.any():
@@ -47,6 +50,7 @@ def extract_dates(csv_path, logger=None):
         )
         df.loc[mask_postimg_missing, "date"] = df_postimg_missing["date"]
 
+    # Save back
     df.to_csv(csv_path, index=False, encoding="utf-8")
     if logger:
         logger.info("Date extraction completed")
@@ -57,7 +61,6 @@ def extract_dates(csv_path, logger=None):
 if __name__ == "__main__":
     import logging
 
-    # Prompt for CSV
     csv_path = input("Enter path to CSV to extract dates for: ").strip()
 
     logging.basicConfig(

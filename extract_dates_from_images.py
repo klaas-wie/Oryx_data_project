@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+import logging
 from extract_images_from_postimg import load_postimg_image
 from date_extracting_from_image_using_OCR import extract_date_from_image
 import warnings
@@ -87,17 +89,22 @@ def extract_dates_from_images(
     return df
 
 if __name__ == "__main__":
-    import logging
-    import pandas as pd
 
-    # Ask user for CSV
-    csv_path = input("Enter path to CSV to extract dates from images: ").strip()
+    # 🔍 Scan for CSV files in current folder
+    csv_files = [f for f in os.listdir(".") if f.endswith(".csv")]
+    if not csv_files:
+        print("No CSV files found in current directory.")
+        exit(1)
 
-    # Load the CSV
+    print("Select CSV run OCR on:")
+    for i, f in enumerate(csv_files, 1):
+        print(f"{i}: {f}")
+    choice = input("Enter number: ").strip()
+
     try:
-        df = pd.read_csv(csv_path)
-    except FileNotFoundError:
-        print(f"File not found: {csv_path}")
+        csv_path = csv_files[int(choice) - 1]
+    except (IndexError, ValueError):
+        print("Invalid choice. Exiting.")
         exit(1)
 
     # --- Logging setup ---
@@ -112,6 +119,8 @@ if __name__ == "__main__":
     logging.getLogger("").addHandler(console)
 
     logger = logging.getLogger()         # Get the root logger
+
+    df = pd.read_csv(csv_path)
 
     # Run the OCR function with logging enabled
     extract_dates_from_images(

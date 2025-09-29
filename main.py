@@ -1,7 +1,9 @@
 import pandas as pd
 import logging
+import os
 from html_parser import parse_oryx_html
-from merge_losses import merge_new_losses
+from write_csv import write_losses_csv
+from merge_losses import merge_with_most_recent
 from extract_dates import extract_dates
 from download_html import download_html
 
@@ -50,19 +52,23 @@ def main():
     logger.info(f"Saved HTML to {dataset['html_file']}")
 
     # 3️⃣ Parse HTML
-    logger.info("Parsing HTML...")
-    df_new = pd.DataFrame(parse_oryx_html(file_path=dataset["html_file"]))
-    logger.info(f"Found {len(df_new)} new losses in HTML")
+    logger.info("Parsing HTML and copying most recently updated Oryx data to csv")
+    losses = parse_oryx_html(file_path=dataset["html_file"])
+    write_losses_csv(losses)
 
-    # 4️⃣ Merge with existing CSV (safe merge)
-    logger.info(f"Merging with existing CSV ({dataset['csv']})")
-    df_merged = merge_new_losses(df_new, csv_path=dataset["csv"], logger=logger)
-    logger.info(f"Merge completed. CSV now has {len(df_merged)} rows")
+    # 4️⃣ Merge with existing CSV if exists
+    if not os.path.exists(dataset["csv"]):
+        logger.info(f"No existing CSV found at {dataset['csv']}, creating new one.")
+        os.rename("most_recent_losses.csv", dataset["csv"])
+    else:
+        logger.info(f"Merging most recent losses into {dataset['csv']}")
+        merge_with_most_recent(dataset["csv"], "most_recent_losses.csv", logger=logger)
+        logger.info("Merge completed")
 
-    # 5️⃣ Run date extraction (existing dates preserved)
-    logger.info("Running date extraction...")
-    extract_dates(dataset["csv"], logger=logger)
-    logger.info("Date extraction completed")
+    # # 5️⃣ Run date extraction (existing dates preserved)
+    # logger.info("Running date extraction...")
+    # extract_dates(dataset["csv"], logger=logger)
+    # logger.info("Date extraction completed")
 
 
 if __name__ == "__main__":

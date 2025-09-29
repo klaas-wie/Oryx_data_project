@@ -1,73 +1,55 @@
 import pandas as pd
+import os
 
-def merge_new_losses(df_new, csv_path, logger=None):
+def merge_with_most_recent(existing_csv, recent_csv="most_recent_losses.csv", logger=None):
     """
-    Merge new losses into existing CSV without overwriting existing dates.
-    Preserves 'date' and 'manually_changed' columns.
-    
-    Args:
-        df_new: DataFrame containing new losses.
-        csv_path: Path to the existing CSV file.
-        logger: Optional logger for progress messages.
-        
-    Returns:
-        df_merged: Merged DataFrame.
+    Merge new rows from `recent_csv` into `existing_csv`, using 'link' as key.
+
+    Rules:
+    - Keep ALL rows from the existing CSV.
+    - Add rows from the recent CSV if their 'link' is not already present.
+    - If multiple rows in recent CSV share the same link, all are added.
+    - After merging, overwrite the existing CSV and delete the recent CSV.
+
+    caveat:
+    if Oryx changes an entry with an old link, the change will NOT be reflected.
+    If you want to be sure to get all changes, delete the existing CSV first.
+    However, running the OCR on the entire csv can take a long time (hours) depending on your hardware.
+    REDO manual changes if you delete the existing CSV.
     """
-    # Load existing CSV if it exists
-    try:
-        df_existing = pd.read_csv(csv_path)
-        if logger:
-            logger.info(f"Loaded {len(df_existing)} existing rows from {csv_path}")
-    except FileNotFoundError:
-        df_existing = pd.DataFrame(columns=df_new.columns)
-        if logger:
-            logger.info(f"No existing CSV found. Creating new file: {csv_path}")
+    # Load both datasets
+    df_existing = pd.read_csv(existing_csv)
+    df_new = pd.read_csv(recent_csv)
 
-    # Ensure essential columns exist
-    for col in ["link", "date", "manually_changed"]:
-        if col not in df_existing.columns:
-            df_existing[col] = None if col == "date" else False
-        if col not in df_new.columns:
-            df_new[col] = None if col == "date" else False
+    # Ensure 'link' column exists
+    if "link" not in df_existing.columns or "link" not in df_new.columns:
+        raise ValueError("Both CSV files must contain a 'link' column")
 
-    # Preserve existing dates and manually_changed flags
-    df_new = df_new.merge(
-        df_existing[["link", "date", "manually_changed"]],
-        on="link",
-        how="left",
-        suffixes=("", "_existing")
+    # Find new rows by link
+    new_rows = df_new[~df_new["link"].isin(df_existing["link"])]
+
+    # Merge: always keep all old rows, add only truly new rows
+    df_merged = pd.concat([df_existing, new_rows], ignore_index=True)
+
+    # Save back to the original CSV
+    df_merged.to_csv(existing_csv, index=False)
+
+    # Remove the most recent file since it's no longer needed
+    os.remove(recent_csv)
+
+    # Logging
+    msg = (
+        f"Merged into {existing_csv} | "
+        f"Added {len(new_rows)} new rows | "
+        f"Updated total: {len(df_merged)} rows | "
+        f"Removed {recent_csv}"
     )
-
-    df_new["date"] = df_new["date_existing"].combine_first(df_new["date"])
-    df_new["manually_changed"] = df_new["manually_changed_existing"].combine_first(df_new["manually_changed"])
-
-    df_new.drop(columns=["date_existing", "manually_changed_existing"], inplace=True)
-
-    # Concatenate old and new to capture any rows not in new HTML
-    df_merged = pd.concat([df_existing, df_new], ignore_index=True)
-
-    # Drop duplicates by 'link', keeping first occurrence
-    before_drop = len(df_merged)
-    df_merged.drop_duplicates(subset=["link"], keep="first", inplace=True)
-    dropped = before_drop - len(df_merged)
-
-    # Save merged CSV
-    df_merged.to_csv(csv_path, index=False, encoding="utf-8")
-
     if logger:
-        added_rows = len(df_merged) - len(df_existing)
-        logger.info(f"Merged {added_rows} new rows. Dropped {dropped} duplicates. CSV now has {len(df_merged)} rows.")
+        logger.info(msg)
+    else:
+        print(msg)
 
-    return df_merged
-
-# Optional standalone usage
 if __name__ == "__main__":
-    import pandas as pd
+    # Example usage → update the file you want to merge into:
+    merge_with_most_recent("russian_losses_with_dates.csv")
 
-    csv_path = input("Enter path to existing CSV: ").strip()
-    new_csv_path = input("Enter path to new CSV (or leave blank to skip): ").strip()
-
-    if new_csv_path:
-        df_new = pd.read_csv(new_csv_path)
-        merge_new_losses(df_new, csv_path)
-        print(f"Merged {new_csv_path} into {csv_path}")

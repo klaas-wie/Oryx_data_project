@@ -1,17 +1,11 @@
 import pandas as pd
 import re
-
-# Define datasets
-DATASETS = {
-    "1": {"name": "Russian losses", "csv": "russian_losses_with_dates.csv"},
-    "2": {"name": "Ukrainian losses", "csv": "ukrainian_losses_with_dates.csv"}
-}
+import os
 
 def date_year_distribution(df):
     """Compute percentage of rows for each year based on 'date' column (dd-mm-yyyy).  
     Ignores empty dates, 'NO_DATE_FOUND', and any invalid formats.
     """
-    # Keep only valid dd-mm-yyyy dates with years 2022–2025
     valid_dates = []
     for date_str in df['date'].dropna().astype(str):
         date_str = date_str.strip()
@@ -40,28 +34,64 @@ def list_unique_loss_types(df):
     print("\nUnique loss types:")
     print(df['loss_type'].value_counts())
 
+
 def count_category(df, categoryname):
     """Count how many entries belong to a given category."""
     count = df[df["category"] == categoryname].shape[0]
     print(f"\nNumber of {categoryname} entries: {count}")
+
 
 def count_link_types(df):
     """Count number of rows per link type."""
     print("\nLink type counts:")
     print(df['link_type'].value_counts())
 
+
 def count_link_types_no_date(df):
     """Count link types only for rows with missing or empty dates."""
-    missing_date = df['date'].isna() | (df['date'].astype(str).str.strip() == "") | (df['date'].astype(str).str.upper() == "NO_DATE_FOUND")
+    missing_date = (
+        df['date'].isna()
+        | (df['date'].astype(str).str.strip() == "")
+        | (df['date'].astype(str).str.upper() == "NO_DATE_FOUND")
+    )
     print("\nLink types for rows with missing dates:")
     print(df.loc[missing_date, 'link_type'].value_counts())
 
+import pandas as pd
+
+def inspect_manually_changed(df):
+    """
+    Inspect the 'manually_changed' column in a CSV file.
+    Prints unique types of entries and their counts.
+    """
+
+    if "manually_changed" not in df.columns:
+        print(f"⚠️ Column 'manually_changed' not found")
+        return
+
+    print(f"\nInspecting 'manually_changed' column in")
+
+    # Show counts of exact values
+    print("\nValue counts:")
+    print(df["manually_changed"].value_counts(dropna=False))
+
+    # Show the datatypes of values (if mixed types exist)
+    print("\nTypes of entries:")
+    types = df["manually_changed"].apply(lambda x: type(x).__name__)
+    print(types.value_counts())
+
+
 def count_dates(df):
     """Count rows with dates and without dates."""
-    has_date = df['date'].notna() & (df['date'].astype(str).str.strip() != "") & (df['date'].astype(str).str.upper() != "NO_DATE_FOUND")
+    has_date = (
+        df['date'].notna()
+        & (df['date'].astype(str).str.strip() != "")
+        & (df['date'].astype(str).str.upper() != "NO_DATE_FOUND")
+    )
     print(f"\nRows with date: {has_date.sum()}")
     print(f"Rows without date: {(~has_date).sum()}")
     print(f"Total rows: {len(df)}")
+
 
 def validate_dates(df):
     """Validate date format and logical range. Returns list of invalid entries."""
@@ -82,6 +112,7 @@ def validate_dates(df):
             results.append((idx, date_str, f"Invalid year: {year}", df.loc[idx, "link"]))
     return results
 
+
 def show_menu(df):
     """Interactive menu for inspections."""
     while True:
@@ -93,9 +124,10 @@ def show_menu(df):
         print("5: Count link types with missing date")
         print("6: Count rows with/without date")
         print("7: Validate date format")
+        print("8: Inspect 'manually_changed' column")
         print("0: Exit")
         option = input("Enter option number: ").strip()
-        
+
         if option == "1":
             date_year_distribution(df)
         elif option == "2":
@@ -118,24 +150,32 @@ def show_menu(df):
                     print(f"Row {idx}: {val} -> {reason} | Link: {link}")
             else:
                 print("\n✅ All dates look valid!")
+        elif option == "8":
+            inspect_manually_changed(df)
         elif option == "0":
             print("Exiting inspection menu.")
             break
         else:
             print("Invalid option, try again.")
 
+
 if __name__ == "__main__":
-    # 1️⃣ Choose dataset
-    print("Select dataset to inspect:")
-    for key, ds in DATASETS.items():
-        print(f"{key}: {ds['name']}")
-    choice = input("Enter 1 or 2: ").strip()
-    if choice not in DATASETS:
+    # 🔍 Scan for CSV files in current folder
+    csv_files = [f for f in os.listdir(".") if f.endswith(".csv")]
+    if not csv_files:
+        print("No CSV files found in current directory.")
+        exit(1)
+
+    print("Select CSV to inspect:")
+    for i, f in enumerate(csv_files, 1):
+        print(f"{i}: {f}")
+    choice = input("Enter number: ").strip()
+
+    try:
+        csv_path = csv_files[int(choice) - 1]
+    except (IndexError, ValueError):
         print("Invalid choice. Exiting.")
         exit(1)
-    
-    dataset = DATASETS[choice]
-    csv_path = dataset["csv"]
 
     try:
         df = pd.read_csv(csv_path)

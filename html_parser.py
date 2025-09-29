@@ -104,7 +104,7 @@ def parse_category(h3_tag):
     return category_losses
 
 
-def parse_oryx_html(file_path="oryx.html", start_category="Tanks"):
+def parse_oryx_html(file_path, start_category="Tanks"):
     """Main function: parse HTML and return all losses starting from a category."""
     soup = load_html(file_path)
     all_losses = []
