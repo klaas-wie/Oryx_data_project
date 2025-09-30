@@ -1,4 +1,5 @@
 import unittest
+import os
 from html_parser import parse_li_item, parse_oryx_html  # import your functions
 from bs4 import BeautifulSoup
 
@@ -21,22 +22,11 @@ class TestOryxParser(unittest.TestCase):
         self.assertEqual(len(losses), 4)
         self.assertTrue(all(loss["loss_type"] == "damaged" for loss in losses))
 
-    # def test_parse_html_category_filter(self):
-    #     html = '''
-    #     <h3>Tanks (50)</h3>
-    #     <ul>
-    #         <li>1 T-62: <a href="https://i.postimg.cc/abcd.jpg">(1, destroyed)</a></li>
-    #     </ul>
-    #     <h3>Aircraft (20)</h3>
-    #     <ul>
-    #         <li>1 Su-25: <a href="https://i.postimg.cc/efgh.jpg">(1, destroyed)</a></li>
-    #     </ul>
-    #     '''
-    #     soup = BeautifulSoup(html, "lxml")
-    #     # simulate parsing only from Tanks onward
-    #     losses = parse_oryx_html(soup, start_category="Tanks")
-    #     self.assertEqual(len(losses), 1)
-    #     self.assertEqual(losses[0]["equipment_type"], "T-62")
+    def test_parse_html_category_filter(self):
+        file = os.path.join(os.path.dirname(__file__), "test_snippet.html")
+        losses = parse_oryx_html(file, start_category="Tanks")
+        self.assertEqual(len(losses), 1)
+        self.assertEqual(losses[0]["equipment_type"], "T-62")
 
 if __name__ == "__main__":
     unittest.main()

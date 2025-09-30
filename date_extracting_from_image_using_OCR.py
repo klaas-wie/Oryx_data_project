@@ -132,7 +132,7 @@ def extract_date_from_image(img: Image.Image) -> Optional[str]:
 
 
 if __name__ == "__main__":
-    base = "/mnt/c/Users/KW/Desktop/test_sample_hard/slashes"
+    base = "tests/test_samples_OCR/slashes"
     valid_extensions = [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]
 
     for filename in os.listdir(base):
