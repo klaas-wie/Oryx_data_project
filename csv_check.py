@@ -57,7 +57,12 @@ def count_link_types_no_date(df):
     print("\nLink types for rows with missing dates:")
     print(df.loc[missing_date, 'link_type'].value_counts())
 
-import pandas as pd
+
+def count_no_date_found(df):
+    """Count rows where date equals exactly 'NO_DATE_FOUND'."""
+    count = (df["date"].astype(str).str.upper() == "NO_DATE_FOUND").sum()
+    print(f"\nRows where date = 'NO_DATE_FOUND': {count}")
+
 
 def inspect_manually_changed(df):
     """
@@ -79,6 +84,17 @@ def inspect_manually_changed(df):
     print("\nTypes of entries:")
     types = df["manually_changed"].apply(lambda x: type(x).__name__)
     print(types.value_counts())
+
+def list_no_date_found_entries(df):
+    """Print index and link of rows where date == 'NO_DATE_FOUND'."""
+    mask = df["date"].astype(str).str.upper() == "NO_DATE_FOUND"
+    no_date_rows = df.loc[mask, ["link"]]
+    if no_date_rows.empty:
+        print("\nNo rows with date = 'NO_DATE_FOUND'.")
+    else:
+        print(f"\nRows with date = 'NO_DATE_FOUND' ({len(no_date_rows)} rows):")
+        for idx, row in no_date_rows.iterrows():
+            print(f"Row {idx}: Link = {row['link']}")
 
 
 def count_dates(df):
@@ -125,6 +141,8 @@ def show_menu(df):
         print("6: Count rows with/without date")
         print("7: Validate date format")
         print("8: Inspect 'manually_changed' column")
+        print("9: Count rows where date = 'NO_DATE_FOUND'")
+        print("10: List all rows where date = 'NO_DATE_FOUND'")  # <-- new option
         print("0: Exit")
         option = input("Enter option number: ").strip()
 
@@ -152,11 +170,16 @@ def show_menu(df):
                 print("\n✅ All dates look valid!")
         elif option == "8":
             inspect_manually_changed(df)
+        elif option == "9":
+            count_no_date_found(df)
+        elif option == "10":
+            list_no_date_found_entries(df)  # <-- call the new function
         elif option == "0":
             print("Exiting inspection menu.")
             break
         else:
             print("Invalid option, try again.")
+
 
 
 if __name__ == "__main__":
