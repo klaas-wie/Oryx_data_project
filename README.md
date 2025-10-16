@@ -33,6 +33,13 @@ csv merge flow:
 
 use check_csv.py to inspect the csv.
 
+On possibility of wrong dates using the OCR:
+- When there's a youtube clip used as visual confirmation, it's possible that the timestamp of the youtube bar is seen as a correct date if it falls within the > 2022 range. I have manually corrected the ones that give year >2025, but it's possible that some timestamps look like a 2022-2025 date. This number is probably very small.
+- OCR is not perfect. It might see a black 2 as a seven, or a 3 as an 8 if the background is the same color as the number. I've tried to make it as robust as possible but it is possible some errors have gone unnoticed.
+
+some images may have xx.08.2022, or february 2022 on them. For these cases I have manually chosen day 15 for date. The dataset is thus best suited for monthly analysis rather than daily. 
+
+
 ## Installation
 
 Steps to install dependencies:

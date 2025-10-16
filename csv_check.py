@@ -84,17 +84,34 @@ def inspect_manually_changed(df):
     print("\nTypes of entries:")
     types = df["manually_changed"].apply(lambda x: type(x).__name__)
     print(types.value_counts())
-
+    
 def list_no_date_found_entries(df):
-    """Print index and link of rows where date == 'NO_DATE_FOUND'."""
+    """
+    Print index and link of rows where date == 'NO_DATE_FOUND'.
+    Ask user if they want to save these rows to NO_DATE_FOUND.csv.
+    """
     mask = df["date"].astype(str).str.upper() == "NO_DATE_FOUND"
     no_date_rows = df.loc[mask, ["link"]]
+
     if no_date_rows.empty:
         print("\nNo rows with date = 'NO_DATE_FOUND'.")
+        return
+
+    print(f"\nRows with date = 'NO_DATE_FOUND' ({len(no_date_rows)} rows):")
+    for idx, row in no_date_rows.iterrows():
+        print(f"Row {idx}: Link = {row['link']}")
+
+    # Ask user if they want to save to CSV
+    save_input = input("\nDo you want to save these rows to 'NO_DATE_FOUND.csv'? (y/n): ").strip().lower()
+    if save_input == "y":
+        export_df = no_date_rows.copy()
+        export_df["date"] = "NO_DATE_FOUND"
+        csv_filename = "NO_DATE_FOUND.csv"
+        export_df.to_csv(csv_filename, index=False)
+        print(f"\nSaved {len(export_df)} rows to '{csv_filename}'")
     else:
-        print(f"\nRows with date = 'NO_DATE_FOUND' ({len(no_date_rows)} rows):")
-        for idx, row in no_date_rows.iterrows():
-            print(f"Row {idx}: Link = {row['link']}")
+        print("\nCSV not saved.")
+
 
 
 def count_dates(df):
