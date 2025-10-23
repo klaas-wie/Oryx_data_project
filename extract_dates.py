@@ -11,8 +11,14 @@ def extract_dates(csv_path, logger=None):
         df["manually_changed"] = False
     df["date"] = df["date"].astype(object)
 
-    # Helper: missing date mask (NaN or empty string)
+    total_rows = len(df)
     missing_date = df["date"].isna() | (df["date"].astype(str).str.strip() == "")
+    total_missing_initial = missing_date.sum()
+
+    log = lambda msg: logger.info(msg) if logger else print(msg)
+
+    log(f"📄 Total rows in file: {total_rows}")
+    log(f"❌ New rows missing date: {total_missing_initial}")
 
     # --- Postimg links (from link string)
     mask_postimg = (
@@ -20,28 +26,47 @@ def extract_dates(csv_path, logger=None):
         & missing_date
         & ~df["manually_changed"]
     )
-    df.loc[mask_postimg, "date"] = df.loc[mask_postimg, "link"].apply(
-        extract_date_from_postimg_with_date_in_link_string
-    )
+    count_postimg = mask_postimg.sum()
+    log(f"🔍 Processing Postimg links with missing date: {count_postimg}")
+
+    if count_postimg > 0:
+        before_count = df["date"].notna().sum()
+        df.loc[mask_postimg, "date"] = df.loc[mask_postimg, "link"].apply(
+            extract_date_from_postimg_with_date_in_link_string
+        )
+        after_count = df["date"].notna().sum()
+        found_postimg = after_count - before_count
+        log(f"✅ Dates found from Postimg link strings: {found_postimg}")
 
     # --- Twitter/X links ---
     mask_twitter = (
         df["link"].str.contains("twitter.com|x.com", regex=True, na=False)
-        & missing_date
+        & ((df["date"].isna()) | (df["date"].astype(str).str.strip() == ""))
         & ~df["manually_changed"]
     )
-    if mask_twitter.any():
+    count_twitter = mask_twitter.sum()
+    log(f"🐦 Processing Twitter/X links with missing date: {count_twitter}")
+
+    if count_twitter > 0:
+        before_count = df["date"].notna().sum()
         df_twitter = df[mask_twitter].copy()
         df_twitter = extract_dates_from_twitter(df_twitter)
         df.loc[mask_twitter, "date"] = df_twitter["date"]
+        after_count = df["date"].notna().sum()
+        found_twitter = after_count - before_count
+        log(f"✅ Dates found from Twitter extraction: {found_twitter}")
 
-    # --- Postimg images ---
+    # --- Postimg images (OCR fallback) ---
     mask_postimg_missing = (
         df["link"].str.contains("postimg|i.postimg|postlmg", regex=True, na=False)
-        & missing_date
+        & ((df["date"].isna()) | (df["date"].astype(str).str.strip() == ""))
         & ~df["manually_changed"]
     )
-    if mask_postimg_missing.any():
+    count_postimg_missing = mask_postimg_missing.sum()
+    log(f"🖼️ Processing Postimg images with missing date (OCR): {count_postimg_missing}")
+
+    if count_postimg_missing > 0:
+        before_count = df["date"].notna().sum()
         df_postimg_missing = df[mask_postimg_missing].copy()
         df_postimg_missing = extract_dates_from_images(
             df_postimg_missing,
@@ -49,13 +74,21 @@ def extract_dates(csv_path, logger=None):
             logger=logger
         )
         df.loc[mask_postimg_missing, "date"] = df_postimg_missing["date"]
+        after_count = df["date"].notna().sum()
+        found_ocr = after_count - before_count
+        log(f"✅ Dates found via image OCR: {found_ocr}")
+
+    # --- Final summary ---
+    total_missing_final = df["date"].isna().sum() + (df["date"].astype(str).str.strip() == "").sum()
+    log(f"🏁 Extraction complete.")
+    log(f"🧮 Total rows processed: {total_rows}")
+    log(f"🕵️ Found dates - Postimg link: {count_postimg}, Twitter: {count_twitter}, OCR: {count_postimg_missing}")
+    log(f"📊 Remaining new rows missing dates: {total_missing_final}")
 
     # Save back
     df.to_csv(csv_path, index=False, encoding="utf-8")
-    if logger:
-        logger.info("Date extraction completed")
-    else:
-        print("Date extraction completed")
+
+    log("💾 CSV file saved with updated dates.")
 
 
 if __name__ == "__main__":

@@ -130,14 +130,51 @@ if "manually_changed" not in losses_with_dates.columns:
 #         losses_with_dates.loc[mask, ["date", "manually_changed"]] = [set_date, True]
 
 # -------------------------------------------
-# Apply manual fixes for invalid date formats
+# Apply changes for OCR rows that resulted in NO_DATE_FOUND, manually checked
 # -------------------------------------------
 
+# Ensure 'manually_changed' column exists
+# if "manually_changed" not in losses_with_dates.columns:
+#     losses_with_dates["manually_changed"] = False
+
+# # -------------------------------------------
+# # Apply changes for OCR rows that resulted in NO_DATE_FOUND, manually checked
+# # -------------------------------------------
+
+# no_date_df = pd.read_csv("NO_DATE_FOUND_manual_changes.csv")
+
+# # Filter out rows that actually have a valid date
+# valid_dates_df = no_date_df[no_date_df["date"] != "NO_DATE_FOUND"]
+
+# # Create a dictionary mapping link -> date (only valid ones)
+# link_to_date = dict(zip(valid_dates_df["link"], valid_dates_df["date"]))
+
+# # Track how many rows are updated
+# updated_count = 0
+
+# # Apply updates
+# def update_row(row):
+#     global updated_count
+#     if row["link"] in link_to_date:
+#         new_date = link_to_date[row["link"]]
+#         if row["date"] != new_date:
+#             updated_count += 1
+#             row["date"] = new_date
+#             row["manually_changed"] = True
+#     return row
+
+# # Apply the function row by row
+# losses_with_dates = losses_with_dates.apply(update_row, axis=1)
+
+# print(f"🔄 {updated_count} rows were updated and marked as manually changed.")
 
 # -------------------------------
 # Save the updated CSV
 # -------------------------------
+
 losses_with_dates.to_csv("russian_losses_with_dates.csv", index=False)
+
+print(f"✅ Updated CSV")
 
 
 

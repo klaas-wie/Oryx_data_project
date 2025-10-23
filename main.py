@@ -65,10 +65,10 @@ def main():
         merge_with_most_recent(dataset["csv"], "most_recent_losses.csv", logger=logger)
         logger.info("Merge completed")
 
-    # # 5️⃣ Run date extraction (existing dates preserved)
-    # logger.info("Running date extraction...")
-    # extract_dates(dataset["csv"], logger=logger)
-    # logger.info("Date extraction completed")
+    # 5️⃣ Run date extraction (existing dates preserved)
+    logger.info("Running date extraction...")
+    extract_dates(dataset["csv"], logger=logger)
+    logger.info("Date extraction completed")
 
 
 if __name__ == "__main__":
