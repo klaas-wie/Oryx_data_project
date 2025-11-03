@@ -108,9 +108,19 @@ def parse_oryx_html(file_path, start_category="Tanks"):
     """Main function: parse HTML and return all losses starting from a category."""
     soup = load_html(file_path)
     all_losses = []
+
     for h3_tag in get_category_h3_tags(soup, start_category=start_category):
+        h3_text = h3_tag.get_text(strip=True)
+
+        # Skip empty <h3> tags
+        if not h3_text:
+            continue
+
         # Stop if h3 doesn't look like a real category
-        if not re.search(r"\(\d", h3_tag.get_text(strip=True)):
+        if not re.search(r"\(\d", h3_text):
             break
+
         all_losses.extend(parse_category(h3_tag))
+
     return all_losses
+

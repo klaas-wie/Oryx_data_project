@@ -2,7 +2,7 @@
 
 Scrapes data on Russo-Ukrainian war from Oryx. Assumes starting category is "Tanks". 1 single piece of equipment loss for one row! See html_parser.py for how I did this. 
 
-Importantly, it adds dates to the losses so losses can be tracked over time. For some cases dates could not be found, and there might be cases where human error led to the wrong date. Some typo errors I have edited manually. Overal I believe the dataset is a very close approximation to reality. 
+Importantly, it adds dates to the losses so losses can be tracked over time. For some cases dates could not be found, and there might be cases where human error led to the wrong date. Some typo errors I have edited manually. The datast obviously assumes that the dates listed by Oryx are the actual loss dates, and for twitter assumes that the post date is the loss date. Overal I believe the dataset is a very close approximation to reality, especially if you look at the data from a monthly basis.
 
 It does that using three methods:
 1. Using regex to extract the date from a link.
@@ -31,7 +31,7 @@ csv merge flow:
     REDO manual changes if you delete the existing CSV, I've tracked them and commented them out.
     """
 
-use check_csv.py to inspect the csv.
+use check_csv.py to inspect the csv. If you check the NO_DATE_FOUND rows, it asks if you want to save the csv. You can manually check the dates for certain losses and merge them later if you want. I have done this myself already, but there might be new rows without a date with new runs. There are a couple hundred rows where the date is unknown to me.
 
 On possibility of wrong dates using the OCR:
 - When there's a youtube clip used as visual confirmation, it's possible that the timestamp of the youtube bar is seen as a correct date if it falls within the > 2022 range. I have manually corrected the ones that give year >2025, but it's possible that some timestamps look like a 2022-2025 date. This number is probably very small.
@@ -45,3 +45,4 @@ some images may have xx.08.2022, or february 2022 on them. For these cases I hav
 Steps to install dependencies:
 ```bash
 pip install -r requirements.txt
+run python3 main.py

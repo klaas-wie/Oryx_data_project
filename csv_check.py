@@ -102,11 +102,15 @@ def list_no_date_found_entries(df):
         print(f"Row {idx}: Link = {row['link']}")
 
     # Ask user if they want to save to CSV
-    save_input = input("\nDo you want to save these rows to 'NO_DATE_FOUND.csv'? (y/n): ").strip().lower()
+    if "russian" in csv_path:
+        dataset = "russian"
+    elif "ukraine" in csv_path:
+        dataset = "ukraine"
+    save_input = input(f"\nDo you want to save these rows to 'NO_DATE_FOUND_{dataset}.csv'? (y/n): ").strip().lower()
     if save_input == "y":
         export_df = no_date_rows.copy()
         export_df["date"] = "NO_DATE_FOUND"
-        csv_filename = "NO_DATE_FOUND.csv"
+        csv_filename = f"NO_DATE_FOUND_{dataset}.csv"
         export_df.to_csv(csv_filename, index=False)
         print(f"\nSaved {len(export_df)} rows to '{csv_filename}'")
     else:

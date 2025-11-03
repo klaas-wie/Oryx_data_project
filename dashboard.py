@@ -4,10 +4,11 @@ import streamlit as st
 import datetime
 import os
 
-st.title("📊 Russian equipment losses Dashboard")
+st.title("📊 Losses in the Russo-Ukrainian War")
 
 # --- Step 1: List CSV files ---
-csv_files = [f for f in os.listdir() if f.endswith(".csv")]
+csv_files = [f for f in os.listdir() if f.endswith(".csv") and "NO_DATE_FOUND" not in f]
+
 if not csv_files:
     st.error("No CSV files found in the current folder.")
     st.stop()
@@ -93,11 +94,22 @@ monthly_counts = complete_month_range(filtered, start_date, end_date)
 plot_monthly_chart(monthly_counts, "Losses per Month (Overall)")
 
 # --- Distribution by category ---
-cat_counts = filtered["category"].value_counts().reset_index()
-cat_counts.columns = ["category", "count"]
+cat_counts = filtered["category"].value_counts().reset_index(name="count")
 if not cat_counts.empty:
-    fig = px.bar(cat_counts, x="category", y="count", title="Distribution by Category")
-    st.plotly_chart(fig, use_container_width=True)
+    max_count = cat_counts["count"].max()
+    fig = px.bar(
+        cat_counts, y="category", x="count", orientation="h",
+        title="Distribution by Category", text="count"
+    )
+    fig.update_traces(textposition="outside")
+    fig.update_yaxes(categoryorder="total ascending")
+    fig.update_layout(
+        height=max(400, len(cat_counts)*30),
+        width=max(800, int(max_count*0.3)),  # dynamic width: adjust based on max count
+        margin=dict(l=200, r=200),           # enough space for big numbers
+        xaxis=dict(range=[0, max_count*1.20]) # 20% extra space
+    )
+    st.plotly_chart(fig)  # remove use_container_width for true dynamic width
 
 # --- Monthly losses per category ---
 category_order = filtered["category"].value_counts().index.tolist()
