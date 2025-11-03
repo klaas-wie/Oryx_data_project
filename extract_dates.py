@@ -3,6 +3,7 @@ from extract_from_links_with_dates import extract_date_from_postimg_with_date_in
 from extract_dates_from_twitter import extract_dates_from_twitter
 from extract_dates_from_images import extract_dates_from_images
 
+
 def extract_dates(csv_path, logger=None):
     df = pd.read_csv(csv_path)
 
@@ -20,7 +21,7 @@ def extract_dates(csv_path, logger=None):
     log(f"📄 Total rows in file: {total_rows}")
     log(f"❌ New rows missing date: {total_missing_initial}")
 
-    # --- Postimg links (from link string)
+    # --- Postimg links (from link string) ---
     mask_postimg = (
         df["link"].str.contains("postimg|i.postimg|postlmg", regex=True, na=False)
         & missing_date
@@ -35,8 +36,7 @@ def extract_dates(csv_path, logger=None):
             extract_date_from_postimg_with_date_in_link_string
         )
         after_count = df["date"].notna().sum()
-        found_postimg = after_count - before_count
-        log(f"✅ Dates found from Postimg link strings: {found_postimg}")
+        log(f"✅ Dates found from Postimg link strings: {after_count - before_count}")
 
     # --- Twitter/X links ---
     mask_twitter = (
@@ -53,8 +53,12 @@ def extract_dates(csv_path, logger=None):
         df_twitter = extract_dates_from_twitter(df_twitter)
         df.loc[mask_twitter, "date"] = df_twitter["date"]
         after_count = df["date"].notna().sum()
-        found_twitter = after_count - before_count
-        log(f"✅ Dates found from Twitter extraction: {found_twitter}")
+        log(f"✅ Dates found from Twitter extraction: {after_count - before_count}")
+
+    # --- SAVE RESULTS BEFORE OCR ---
+    df.to_csv(csv_path, index=False, encoding="utf-8")
+    saved_count = df["date"].notna().sum() - (total_rows - total_missing_initial)
+    log(f"💾 CSV saved with Postimg + Twitter dates before starting OCR | New rows saved: {saved_count}")
 
     # --- Postimg images (OCR fallback) ---
     mask_postimg_missing = (
@@ -67,13 +71,12 @@ def extract_dates(csv_path, logger=None):
 
     if count_postimg_missing > 0:
         before_count = df["date"].notna().sum()
-        df_postimg_missing = df[mask_postimg_missing].copy()
-        df_postimg_missing = extract_dates_from_images(
-            df_postimg_missing,
+        # ✅ Pass the full DataFrame to preserve previously filled rows
+        df = extract_dates_from_images(
+            df,
             csv_path=csv_path,
             logger=logger
         )
-        df.loc[mask_postimg_missing, "date"] = df_postimg_missing["date"]
         after_count = df["date"].notna().sum()
         found_ocr = after_count - before_count
         log(f"✅ Dates found via image OCR: {found_ocr}")
@@ -87,7 +90,6 @@ def extract_dates(csv_path, logger=None):
 
     # Save back
     df.to_csv(csv_path, index=False, encoding="utf-8")
-
     log("💾 CSV file saved with updated dates.")
 
 

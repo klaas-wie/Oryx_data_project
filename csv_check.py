@@ -104,7 +104,7 @@ def list_no_date_found_entries(df):
     # Ask user if they want to save to CSV
     if "russian" in csv_path:
         dataset = "russian"
-    elif "ukraine" in csv_path:
+    elif "ukrainian" in csv_path:
         dataset = "ukraine"
     save_input = input(f"\nDo you want to save these rows to 'NO_DATE_FOUND_{dataset}.csv'? (y/n): ").strip().lower()
     if save_input == "y":

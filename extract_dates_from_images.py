@@ -35,31 +35,32 @@ def extract_dates_from_images(
     logger=None,
     retry_only_no_date=False,
 ):
+    """
+    Extract dates from images using OCR. Saves batch progress without removing existing rows.
+    """
     processed_count = 0
 
-    # ✅ Compute the rows we are actually processing
+    # Compute rows we actually need to process
     rows_to_process = df[
         df["link_type"].isin(["i.postimg", "postimg", "postlmg"]) &
         ((df["date"].astype(str).str.upper() == "NO_DATE_FOUND") if retry_only_no_date
          else (df["date"].isna() | (df["date"].astype(str).str.strip() == "")))
     ]
 
+    total_to_process = len(rows_to_process)
+    if logger:
+        logger.info(f"🖼️ Starting OCR on {total_to_process} rows.")
+
     for idx, url, img in load_images_from_csv(df, retry_only_no_date=retry_only_no_date):
-        # ✅ Use rows_to_process length instead of all df
-        remaining = len(rows_to_process) - processed_count - 1
+        remaining = total_to_process - processed_count - 1
 
         if img:
             if logger:
                 logger.info(f"[{idx}] Loaded image from {url}: size={img.size}, format={img.format}")
             date_str = extract_date_from_image(img)
-            if date_str:
-                df.at[idx, "date"] = date_str
-                if logger:
-                    logger.info(f"[{idx}] ✅ Extracted date: {date_str} ({remaining} remaining)")
-            else:
-                df.at[idx, "date"] = "NO_DATE_FOUND"
-                if logger:
-                    logger.info(f"[{idx}] ❌ No date found in image ({remaining} remaining)")
+            df.at[idx, "date"] = date_str if date_str else "NO_DATE_FOUND"
+            if logger:
+                logger.info(f"[{idx}] {'✅ Extracted date' if date_str else '❌ No date found'} ({remaining} remaining)")
         else:
             df.at[idx, "date"] = "NO_DATE_FOUND"
             if logger:
@@ -67,22 +68,22 @@ def extract_dates_from_images(
 
         processed_count += 1
 
+        # Batch save: always save the **full DataFrame**
         if processed_count % batch_size == 0:
             df.to_csv(csv_path, index=False)
             if logger:
-                logger.info(f"💾 Saved progress after {processed_count} processed rows.")
+                logger.info(f"💾 Saved progress after {processed_count} OCR rows (full DataFrame).")
 
+    # Final save of full DataFrame
     df.to_csv(csv_path, index=False)
     if logger:
-        logger.info("✅ Final CSV save completed.")
+        logger.info("✅ Final CSV save completed (full DataFrame).")
 
     return df
 
 
-
 if __name__ == "__main__":
-
-    # 🔍 Scan for CSV files in current folder
+    # Scan for CSV files in current folder
     csv_files = [f for f in os.listdir(".") if f.endswith(".csv")]
     if not csv_files:
         print("No CSV files found in current directory.")
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         print("Invalid choice. Exiting.")
         exit(1)
 
-    # --- Logging setup ---
+    # Logging setup
     log_file = csv_path.replace(".csv", "_ocr.log")
     logging.basicConfig(
         filename=log_file,
@@ -111,12 +112,12 @@ if __name__ == "__main__":
     logging.getLogger("").addHandler(console)
     logger = logging.getLogger()
 
-    # --- Load CSV ---
+    # Load CSV
     df = pd.read_csv(csv_path)
     no_date_rows = df[df["date"].astype(str).str.upper() == "NO_DATE_FOUND"]
     count_no_date = len(no_date_rows)
 
-    # --- Ask user if they want to retry ---
+    # Ask user if they want to retry
     if count_no_date > 0:
         print(f"\n🕵️ {count_no_date} rows found with NO_DATE_FOUND.")
         retry_choice = input("Would you like to retry OCR for these rows? (y/n): ").strip().lower()
