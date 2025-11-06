@@ -43,8 +43,14 @@ def get_category_h3_tags(soup, start_category="Tanks"):
 
 import re
 
+import re
+
 def parse_li_item(li, category):
-    """Parse a single <li> element (HTML) into multiple loss entries."""
+    """Parse a single <li> element into multiple loss entries.
+
+    If category contains 'Naval', each bracketed <a> is one loss entry.
+    Otherwise, normal counting logic applies.
+    """
     li_text = li.get_text(" ", strip=True)
 
     # Extract equipment type (ignore number in front)
@@ -55,30 +61,43 @@ def parse_li_item(li, category):
     equipment_type = equip_match.group(1).strip()
     losses = []
 
-    # Each <a> corresponds to one loss entry
+    # Loop over each <a> tag
     for a in li.find_all("a"):
         link = a.get("href", "")
         link_type = classify_link(link)
 
-        # Get the text inside parentheses and strip them
         bracket_text = a.get_text(strip=True).strip("()")
 
-        # Remove the first number and an optional comma/space
-        loss_type = re.sub(r"^\s*\d+\s*,?\s*", "", bracket_text).strip()
-
-        losses.append({
-            "equipment_type": equipment_type,
-            "category": category,
-            "loss_type": loss_type,
-            "link_type": link_type,
-            "link": link,
-            "date": ""  # placeholder for now
-        })
+        # ----- Branch logic -----
+        if "naval" in category.lower():
+            # Naval: 1 loss per <a>, remove first number + comma/space
+            loss_type = re.sub(r"^\s*\d+\s*,?\s*", "", bracket_text).strip()
+            numbers = ["1"]  # just one entry per bracket
+        else:
+            # Normal categories: count all numbers in the bracket
+            all_numbers = list(re.finditer(r"\d+", bracket_text))
+            if all_numbers:
+                last_num_match = all_numbers[-1]
+                # Everything after the last number is the loss_type
+                loss_type = bracket_text[last_num_match.end():].strip(" ,")
+                num_text = bracket_text[:last_num_match.end()]
+                numbers = re.findall(r"\d+", num_text)
+            else:
+                # If no number, just 1 loss
+                loss_type = bracket_text.strip()
+                numbers = ["1"]
+        # ----- Build entries -----
+        for _ in numbers:
+            losses.append({
+                "equipment_type": equipment_type,
+                "category": category,
+                "loss_type": loss_type,
+                "link_type": link_type,
+                "link": link,
+                "date": ""  # placeholder
+            })
 
     return losses
-
-
-
 
 
 def parse_category(h3_tag):
