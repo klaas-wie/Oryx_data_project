@@ -41,10 +41,12 @@ def get_category_h3_tags(soup, start_category="Tanks"):
         if start_collecting:
             yield h
 
+import re
+
 def parse_li_item(li, category):
-    """Parse a single <li> element into multiple loss entries."""
+    """Parse a single <li> element (HTML) into multiple loss entries."""
     li_text = li.get_text(" ", strip=True)
-    
+
     # Extract equipment type (ignore number in front)
     equip_match = re.match(r"^\d*\s*(.*?):", li_text)
     if not equip_match:
@@ -53,40 +55,29 @@ def parse_li_item(li, category):
     equipment_type = equip_match.group(1).strip()
     losses = []
 
+    # Each <a> corresponds to one loss entry
     for a in li.find_all("a"):
-        link = a["href"]
+        link = a.get("href", "")
         link_type = classify_link(link)
 
+        # Get the text inside parentheses and strip them
         bracket_text = a.get_text(strip=True).strip("()")
 
-        # Find the last number in the bracket text
-        all_numbers = list(re.finditer(r"\d+", bracket_text))
-        if all_numbers:
-            last_num_match = all_numbers[-1]
-            # Everything after the last number is the loss type
-            loss_type = bracket_text[last_num_match.end():].strip(" ,")
-            num_text = bracket_text[:last_num_match.end()]
-        else:
-            # If no number, just take the whole bracket as loss type
-            loss_type = bracket_text.strip()
-            num_text = ""
+        # Remove the first number and an optional comma/space
+        loss_type = re.sub(r"^\s*\d+\s*,?\s*", "", bracket_text).strip()
 
-        # Find all numbers in num_text
-        numbers = re.findall(r"\d+", num_text)
-        if not numbers:
-            numbers = ["1"]
-
-        for _ in numbers:
-            losses.append({
-                "equipment_type": equipment_type,
-                "category": category,
-                "loss_type": loss_type,
-                "link_type": link_type,
-                "link": link,
-                "date": ""  # placeholder
-            })
+        losses.append({
+            "equipment_type": equipment_type,
+            "category": category,
+            "loss_type": loss_type,
+            "link_type": link_type,
+            "link": link,
+            "date": ""  # placeholder for now
+        })
 
     return losses
+
+
 
 
 
