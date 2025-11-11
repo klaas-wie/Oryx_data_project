@@ -149,6 +149,28 @@ def validate_dates(df):
             results.append((idx, date_str, f"Invalid year: {year}", df.loc[idx, "link"]))
     return results
 
+def equipment_per_category(df):
+    """Show number of rows per equipment type within a selected category."""
+    if "category" not in df.columns or "equipment_type" not in df.columns:
+        print("⚠️ Required columns ('category' and 'equipment_type') not found.")
+        return
+
+    categories = df["category"].dropna().unique().tolist()
+    print("\nAvailable categories:", categories)
+    cat = input("Enter category name: ").strip()
+
+    if cat not in categories:
+        print(f"Category '{cat}' not found in data.")
+        return
+
+    subset = df[df["category"] == cat]
+    if subset.empty:
+        print(f"No rows found for category '{cat}'.")
+        return
+
+    print(f"\nEquipment type counts for category '{cat}':")
+    print(subset["equipment_type"].value_counts())
+    print(f"Total rows in category '{cat}': {len(subset)}")
 
 def show_menu(df):
     """Interactive menu for inspections."""
@@ -163,7 +185,8 @@ def show_menu(df):
         print("7: Validate date format")
         print("8: Inspect 'manually_changed' column")
         print("9: Count rows where date = 'NO_DATE_FOUND'")
-        print("10: List all rows where date = 'NO_DATE_FOUND'")  # <-- new option
+        print("10: List all rows where date = 'NO_DATE_FOUND'")
+        print("11: Show equipment type counts per category")
         print("0: Exit")
         option = input("Enter option number: ").strip()
 
@@ -194,12 +217,16 @@ def show_menu(df):
         elif option == "9":
             count_no_date_found(df)
         elif option == "10":
-            list_no_date_found_entries(df)  # <-- call the new function
+            list_no_date_found_entries(df)
+        elif option == "11":
+            equipment_per_category(df)
         elif option == "0":
             print("Exiting inspection menu.")
             break
         else:
             print("Invalid option, try again.")
+
+
 
 
 

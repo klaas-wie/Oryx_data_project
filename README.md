@@ -39,6 +39,9 @@ On possibility of wrong dates using the OCR:
 
 some images may have xx.08.2022, or february 2022 on them. For these cases I have manually chosen day 15 for date. The dataset is thus best suited for monthly analysis rather than daily. 
 
+Other things I have discovered:
+The number listed on Oryx behind the category name does not always correspond with what is actually listed in terms of losses. 2 cases in the Ukrainian dataset where this makes a big difference: Armoured Personel Cariers, Engineering Vehicles and Equipment and to a lesser extend Radars and Communications equipment.
+
 
 ## Installation
 

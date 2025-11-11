@@ -41,10 +41,6 @@ def get_category_h3_tags(soup, start_category="Tanks"):
         if start_collecting:
             yield h
 
-import re
-
-import re
-
 def parse_li_item(li, category):
     """Parse a single <li> element into multiple loss entries.
 
@@ -103,6 +99,7 @@ def parse_li_item(li, category):
 def parse_category(h3_tag):
     """Parse all <li> items under a given <h3> category tag."""
     category = h3_tag.get_text(strip=True).split("(")[0].strip()
+    category_amount = int(re.search(r"\d+", h3_tag.get_text(strip=True)).group())
     category_losses = []
 
     for sib in h3_tag.find_next_siblings():
@@ -111,6 +108,7 @@ def parse_category(h3_tag):
         for li in BeautifulSoup(str(sib), "lxml").find_all("li"):
             category_losses.extend(parse_li_item(li, category))
 
+    print(f"Category: {category}, category_amount_oryx: {category_amount}", "items parsed: ", len(category_losses))
     return category_losses
 
 
