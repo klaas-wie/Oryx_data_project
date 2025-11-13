@@ -56,6 +56,7 @@ st.markdown(f"### Showing {len(filtered)} records (of {len(df)})")
 
 # --- Helper: create complete month range ---
 def complete_month_range(df, start_date, end_date):
+    start_date = pd.Timestamp(start_date).to_period("M").to_timestamp()
     all_months = pd.date_range(start=start_date, end=end_date, freq='MS')  # Month starts
     monthly_counts = pd.DataFrame()
     if not df.empty:
