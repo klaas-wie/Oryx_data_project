@@ -1,8 +1,7 @@
 name: Run main.py periodically
-
 on:
-  schedule:
-    - cron: "0 * * * *"   # Runs every hour
+#  schedule:
+#    - cron: "0 * * * *"   # Runs every hour
   workflow_dispatch:       # Allows manual runs
 
 jobs:
@@ -16,11 +15,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12.3"
 
       - name: Install dependencies
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run main.py
-        run: python main.py
+        run: python3 main.py
