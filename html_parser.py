@@ -108,7 +108,7 @@ def parse_category(h3_tag):
         for li in BeautifulSoup(str(sib), "lxml").find_all("li"):
             category_losses.extend(parse_li_item(li, category))
 
-    print(f"Category: {category}, category_amount_oryx: {category_amount}", "items parsed: ", len(category_losses))
+    #print(f"Category: {category}, category_amount_oryx: {category_amount}", "items parsed: ", len(category_losses))
     return category_losses
 
 
