@@ -22,29 +22,35 @@ DATASETS = {
     }
 }
 
-def main():
-    # 1️⃣ Ask user which dataset to process
-    print("Select dataset to process:")
-    for key, val in DATASETS.items():
-        print(f"{key}: {val['name']}")
-    choice = input("Enter choice: ").strip()
-    if choice not in DATASETS:
-        print("Invalid choice. Exiting.")
-        return
+def setup_logger(name, log_file):
+    """
+    Creates a dedicated logger for a dataset, writing to a file and console,
+    without timestamps or [INFO], and avoids duplicate logs.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
 
-    dataset = DATASETS[choice]
+    if not logger.hasHandlers():
+        # Formatter that prints only the message
+        formatter = logging.Formatter("%(message)s")
+
+        # File handler
+        fh = logging.FileHandler(log_file)
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+        # Console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+    return logger
+
+def process_dataset(dataset):
     print(f"Processing {dataset['name']}")
-
-    # --- Logging setup ---
-    logging.basicConfig(
-        filename=f"{dataset['name'].replace(' ', '_')}.log",
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s"
-    )
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    logging.getLogger("").addHandler(console)
-    logger = logging.getLogger()
+    logger = setup_logger(dataset['name'], f"{dataset['name'].replace(' ', '_')}.log")
 
     # 2️⃣ Download HTML
     logger.info(f"Downloading HTML from {dataset['url']}")
@@ -69,6 +75,24 @@ def main():
     logger.info("Running date extraction...")
     extract_dates(dataset["csv"], logger=logger)
     logger.info("Date extraction completed")
+
+
+def main():
+    # --- Run both datasets sequentially ---
+    for key in DATASETS:
+        dataset = DATASETS[key]
+        process_dataset(dataset)
+
+    # --- Interactive choice (commented out for future use) ---
+    # print("Select dataset to process:")
+    # for key, val in DATASETS.items():
+    #     print(f"{key}: {val['name']}")
+    # choice = input("Enter choice: ").strip()
+    # if choice not in DATASETS:
+    #     print("Invalid choice. Exiting.")
+    #     return
+    # dataset = DATASETS[choice]
+    # process_dataset(dataset)
 
 
 if __name__ == "__main__":
