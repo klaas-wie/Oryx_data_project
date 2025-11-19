@@ -2,6 +2,8 @@
 
 for data see russian_losses_with_dates.csv and ukrainian_losses_with_dates.csv
 
+dashboard live at https://russia-ukraine-war.streamlit.app/
+
 Scrapes data on Russo-Ukrainian war from Oryx. Assumes starting category is "Tanks". 1 single piece of equipment loss for one row! See html_parser.py for how I did this. 
 
 Importantly, it adds dates to the losses so losses can be tracked over time. For some cases dates could not be found, and there might be cases where human error led to the wrong date. Some typo errors I have edited manually. The dataset obviously assumes that the dates listed on Oryx are the actual loss dates, and for twitter assumes that the post date is the loss date. Analysis-wise, the data is best suited for per-month analysis since actual loss dates might be slightly different from the dates listed on Oryx. Overal I believe the dataset is a very close approximation of reality.
