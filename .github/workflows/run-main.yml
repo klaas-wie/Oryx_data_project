@@ -1,4 +1,4 @@
-name: Run main.py manually
+name: Run main.py at midnight UTC
 
 on:
   workflow_dispatch:
