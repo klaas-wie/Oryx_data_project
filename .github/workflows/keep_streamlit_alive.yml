@@ -1,4 +1,4 @@
-name: Keep Streamlit App Awake (With Fallback Regions)
+name: Keep Streamlit App Awake
 
 on:
   schedule:
