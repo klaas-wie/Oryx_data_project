@@ -1,0 +1,50 @@
+name: Keep Streamlit App Awake (With Fallback Regions)
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # Every 20 minutes
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Timestamp
+        run: echo "Ping run at:$(date -u)"
+
+      - name: Ping Streamlit (Primary EU)
+        id: ping1
+        run: |
+          echo "Primary ping..."
+          if curl -s --max-time 10 https://russia-ukraine-war.streamlit.app/ > /dev/null; then
+            echo "primary=success" >> $GITHUB_OUTPUT
+          else
+            echo "primary=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ping Streamlit (US fallback)
+        id: ping2
+        run: |
+          echo "US region fallback ping..."
+          if curl -s --max-time 10 https://russia-ukraine-war.streamlit.app/ > /dev/null; then
+            echo "secondary=success" >> $GITHUB_OUTPUT
+          else
+            echo "secondary=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ping Streamlit (Asia fallback)
+        id: ping3
+        run: |
+          echo "Asia region fallback ping..."
+          if curl -s --max-time 10 https://russia-ukraine-war.streamlit.app/ > /dev/null; then
+            echo "tertiary=success" >> $GITHUB_OUTPUT
+          else
+            echo "tertiary=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Show ping results
+        run: |
+          echo "Primary EU:     ${{ steps.ping1.outputs.primary }}"
+          echo "Secondary US:    ${{ steps.ping2.outputs.secondary }}"
+          echo "Tertiary Asia:   ${{ steps.ping3.outputs.tertiary }}"
