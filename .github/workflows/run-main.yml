@@ -42,3 +42,20 @@ jobs:
       # Step 5: Run main.py
       - name: Run main.py
         run: python3 main.py
+
+        
+      # Step 6: commit and push
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add -A
+          
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Automated update from GitHub Actions"
+            git push
+          fi
+
